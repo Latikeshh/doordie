@@ -4,14 +4,12 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-
 const app = express();
 const server = http.createServer(app);
 const PORT = 8000;
 
-/* =========================
-   SOCKET.IO SETUP
-========================= */
+//  SOCKET.IO SETUP
+
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -19,12 +17,10 @@ const io = new Server(server, {
   }
 });
 
-/* Make io accessible in controllers if needed */
 app.set("io", io);
 
-/* =========================
-   MIDDLEWARE
-========================= */
+//*  MIDDLEWARE
+
 app.use(cors());
 app.use(express.json());
 
