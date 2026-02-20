@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
-const StudentSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    enroll: {
+    email: {
       type: String,
       required: true,
       unique: true,
-      match: [/^\d{11}$/, "Enrollment number must be exactly 11 digits"]
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"]
     },
 
     name: {
@@ -19,10 +19,7 @@ const StudentSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    verify: {
-      type: Boolean,
-      default: false
-    },
+
     isDeleted: {
       type: Boolean,
       default: false
@@ -31,4 +28,4 @@ const StudentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Student", StudentSchema);
+module.exports = mongoose.model("User", UserSchema);

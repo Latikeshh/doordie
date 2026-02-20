@@ -10,14 +10,15 @@ app.use(cors());
 app.use(express.json());
 
 mongoose
-  .connect("mongodb://localhost:27017/Block-Chain")
+  .connect("mongodb://localhost:27017/Chatting")
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log(err));
 
-app.use("/student", require("./routes/StudentLoginRoute"));
+app.use("/user", require("./routes/LoginRoute"));
 app.use("/teacher", require("./routes/TeacherLoginRoute"));
 app.use("/student", require("./routes/studentProfileRoutes"));
 app.use("/uploads", express.static("uploads"));
+
 
 app.get("/", (req, res) => {
   res.send("Server running");
