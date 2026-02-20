@@ -8,10 +8,10 @@ router.get("/count", LoginCtrl.countUsers);
 /* LIST */
 router.get("/getuser", LoginCtrl.getUsers);
 
-/* SEARCH */
-router.get("/searchuser", LoginCtrl.searchUsers);
-
 /* UPDATE */
 router.put("/:id", LoginCtrl.updateUser);
+
+/* FORGOT PASSWORD */
+router.post("/forgot-password", LoginCtrl.forgotPassword);
 
 module.exports = router;

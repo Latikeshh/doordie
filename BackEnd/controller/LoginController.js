@@ -1,38 +1,51 @@
-const Login = require("../models/LoginModel");
+const User = require("../models/LoginModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 /* SIGNUP */
 exports.signup = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, username, password } = req.body;
 
   try {
-    const exists = await Login.findOne({ email, isDeleted: false });
-    if (exists) {
-      return res.status(400).json({ message: "User already exists" });
+    // Check if email or username already exists
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: "Username already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await Login.create({
+    await User.create({
       name,
       email,
+      username,
       password: hashedPassword
     });
 
     res.status(201).json({ message: "Signup successful" });
 
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.log(err);
+    res.status(500).json({ message: err.message });
   }
 };
 
-/* LOGIN */
+
+/* LOGIN (using email OR username) */
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, username, password } = req.body;
 
   try {
-    const user = await Login.findOne({ email, isDeleted: false });
+    const user = await User.findOne({
+      $or: [{ email }, { username }],
+      isDeleted: false
+    });
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -55,54 +68,60 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: "user"
+        username: user.username
       }
     });
 
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.log(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+/* GET ALL USERS */
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isDeleted: false })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.json(users);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
 /* COUNT USERS */
 exports.countUsers = async (req, res) => {
   try {
-    const count = await Login.countDocuments({ isDeleted: false });
-    res.json({ count });
+    const count = await User.countDocuments({ isDeleted: false });
+    res.json({ totalUsers: count });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 };
+/* FORGOT PASSWORD */
+exports.forgotPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
 
-/* GET ALL USERS */
-exports.getUsers = async (req, res) => {
   try {
-    const users = await Login.find({ isDeleted: false })
-      .select("-password")
-      .sort({ createdAt: -1 });
+    const user = await User.findOne({ email, isDeleted: false });
 
-    res.json(users);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/* SEARCH USERS */
-exports.searchUsers = async (req, res) => {
-  try {
-    const { keyword } = req.query;
-
-    const users = await Login.find({
-      isDeleted: false,
-      $or: [
-        { name: { $regex: keyword, $options: "i" } },
-        { email: { $regex: keyword, $options: "i" } }
-      ]
-    }).select("-password");
-
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -110,19 +129,19 @@ exports.searchUsers = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password } = req.body;
+    const { name, email, username, password } = req.body;
 
-    const user = await Login.findById(id);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     if (name) user.name = name;
     if (email) user.email = email;
+    if (username) user.username = username;
 
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
+      user.password = await bcrypt.hash(password, 10);
     }
 
     await user.save();
@@ -130,6 +149,6 @@ exports.updateUser = async (req, res) => {
     res.json({ message: "User updated successfully" });
 
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 };
